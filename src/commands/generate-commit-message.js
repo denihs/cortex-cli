@@ -85,6 +85,11 @@ async function callCommitMessageAPI(diff, token) {
   }
 }
 
+function formatCommitMessage(header, apiMessage) {
+  if (!header) return apiMessage;
+  return `${header}\n\n${apiMessage}`;
+}
+
 async function commitChanges(message, shouldPush = false) {
   try {
     const answer = await new Promise(resolve => {
@@ -105,6 +110,8 @@ async function commitChanges(message, shouldPush = false) {
         console.log(chalk.green(`Changes pushed to origin/${currentBranch} successfully!`));
       }
     }
+
+    process.exit(0);
   } catch (error) {
     console.error(chalk.red(`Error ${error.message.includes('push') ? 'pushing' : 'committing'} changes:`), error.message);
     process.exit(1);
@@ -121,7 +128,10 @@ export async function generateCommitMessage(options) {
     const diff = await getDiff(options);
 
     // Call the API to generate the commit message
-    const message = await callCommitMessageAPI(diff, token);
+    const apiMessage = await callCommitMessageAPI(diff, token);
+
+    // Format the final message with header if provided
+    const message = formatCommitMessage(options.header, apiMessage);
 
     // Copy to clipboard and show in terminal
     await clipboardy.write(message);
