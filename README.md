@@ -5,7 +5,7 @@ A command-line tool to generate commit messages based on your repository changes
 ## Installation
 
 ```bash
-npm install -g cortex-cli
+npm install -g @denyhs/cortex-cli
 ```
 
 ## Configuration
