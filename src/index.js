@@ -20,6 +20,7 @@ program
   .option('--all', 'Generate message for all changes (staged and unstaged)')
   .option('--header', 'Generate only the commit message header')
   .option('--commitStaged', 'Commit staged changes with the generated message')
+  .option('--commitAndPush', 'Commit staged changes and push them to the remote repository')
   .action(generateCommitMessage);
 
 program.parse(); 

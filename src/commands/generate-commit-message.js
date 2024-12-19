@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import simpleGit from 'simple-git';
+import clipboardy from 'clipboardy';
 
 const git = simpleGit();
 
@@ -84,10 +85,11 @@ async function callCommitMessageAPI(diff, token) {
   }
 }
 
-async function commitChanges(message) {
+async function commitChanges(message, shouldPush = false) {
   try {
     const answer = await new Promise(resolve => {
-      process.stdout.write(chalk.yellow('Do you want to commit the staged changes with this message? (y/yes): '));
+      const action = shouldPush ? 'commit and push' : 'commit';
+      process.stdout.write(chalk.yellow(`Do you want to ${action} the staged changes with this message? (y/yes): `));
       process.stdin.once('data', data => {
         resolve(data.toString().trim().toLowerCase());
       });
@@ -96,31 +98,46 @@ async function commitChanges(message) {
     if (answer === 'y' || answer === 'yes') {
       await git.commit(message);
       console.log(chalk.green('Changes committed successfully!'));
+
+      if (shouldPush) {
+        const currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
+        await git.push('origin', currentBranch);
+        console.log(chalk.green(`Changes pushed to origin/${currentBranch} successfully!`));
+      }
     }
   } catch (error) {
-    console.error(chalk.red('Error committing changes:'), error.message);
+    console.error(chalk.red(`Error ${error.message.includes('push') ? 'pushing' : 'committing'} changes:`), error.message);
     process.exit(1);
   }
 }
 
 export async function generateCommitMessage(options) {
-  // Validate environment and repository
-  const token = validateEnvironment();
-  await validateGitRepository();
+  try {
+    // Validate environment and repository
+    const token = validateEnvironment();
+    await validateGitRepository();
 
-  // Get the diff based on options
-  const diff = await getDiff(options);
+    // Get the diff based on options
+    const diff = await getDiff(options);
 
-  // Call the API to generate the commit message
-  const message = await callCommitMessageAPI(diff, token);
+    // Call the API to generate the commit message
+    const message = await callCommitMessageAPI(diff, token);
 
-  // Show the generated message
-  console.log(chalk.green('\nGenerated commit message:\n'));
-  console.log(chalk.white(message));
-  console.log(chalk.yellow('\nPlease copy the message above to use it.\n'));
+    // Copy to clipboard and show in terminal
+    await clipboardy.write(message);
+    console.log(chalk.green('\nGenerated commit message (copied to clipboard):\n'));
+    console.log(chalk.white(message));
 
-  // Handle commit if requested
-  if (options.commitStaged) {
-    await commitChanges(message);
+    // Handle commit and push if requested
+    if (options.commitAndPush) {
+      await commitChanges(message, true);
+    } else if (options.commitStaged) {
+      await commitChanges(message, false);
+    }
+
+    process.exit(0);
+  } catch (error) {
+    console.error(chalk.red('Unexpected error:'), error.message);
+    process.exit(1);
   }
 } 

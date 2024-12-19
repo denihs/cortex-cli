@@ -2,6 +2,11 @@
 
 A command-line tool to generate commit messages based on your repository changes.
 
+## Requirements
+
+- Node.js >= 20.0.0
+- npm >= 11.0.0
+
 ## Installation
 
 ```bash
@@ -36,6 +41,7 @@ cortex commit-message [options]
 - `--all`: Generate message for all changes (staged and unstaged)
 - `--header`: Generate only the commit message header
 - `--commitStaged`: After generating the message, prompt to commit staged changes
+- `--commitAndPush`: After generating the message, prompt to commit staged changes and push them to the remote repository
 
 ### Examples
 
@@ -48,6 +54,9 @@ cortex commit-message --all
 
 # Generate message and commit if approved
 cortex commit-message --commitStaged
+
+# Generate message, commit, and push if approved
+cortex commit-message --commitAndPush
 ```
 
 ## Features
@@ -56,5 +65,6 @@ cortex commit-message --commitStaged
 - Supports different scopes of changes (staged, unstaged, or all)
 - Copies generated message to clipboard
 - Optional automatic commit after message generation
+- Optional automatic push to remote after commit
 - Environment variable validation
 - Git repository validation
