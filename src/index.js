@@ -18,6 +18,7 @@ program
   .option('--onlyStaged', 'Generate message only for staged changes (default behavior)')
   .option('--onlyUnstaged', 'Generate message only for unstaged changes')
   .option('--all', 'Generate message for all changes (staged and unstaged)')
+  .option('--stageAll', 'Stage all changes before generating the message')
   .option('--header <text>', 'Add a custom header to the commit message')
   .option('--commitStaged', 'Commit staged changes with the generated message')
   .option('--commitAndPush', 'Commit staged changes and push them to the remote repository')

@@ -1,6 +1,6 @@
 {
   "name": "@denyhs/cortex-cli",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.2-alpha.1",
   "description": "CLI tool to generate commit messages based on repository changes",
   "main": "src/index.js",
   "type": "module",
@@ -28,5 +28,8 @@
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
     "simple-git": "^3.22.0"
-  }
+  },
+  "files": [
+    "src/"
+  ]
 } 

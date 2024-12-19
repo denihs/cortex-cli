@@ -2,6 +2,9 @@ import chalk from 'chalk';
 import simpleGit from 'simple-git';
 import clipboardy from 'clipboardy';
 
+const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'http://localhost:5000';
+const API_URL = `${API_HOSTNAME}/api/generate-commit-message`;
+
 const git = simpleGit();
 
 function validateEnvironment() {
@@ -28,8 +31,23 @@ async function validateGitRepository() {
   }
 }
 
+async function stageAllChanges() {
+  try {
+    await git.add('.');
+    console.log(chalk.green('All changes have been staged.'));
+  } catch (error) {
+    console.error(chalk.red('Error staging changes:'), error.message);
+    process.exit(1);
+  }
+}
+
 async function getDiff(options) {
   try {
+    // Stage all changes if requested
+    if (options.stageAll) {
+      await stageAllChanges();
+    }
+
     const status = await git.status();
     
     // Check if there are any changes according to the options
@@ -63,7 +81,7 @@ async function getDiff(options) {
 
 async function callCommitMessageAPI(diff, token) {
   try {
-    const response = await fetch('http://localhost:5000/api/generate-commit-message', {
+    const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
