@@ -2,11 +2,6 @@
 
 A command-line tool to generate commit messages based on your repository changes.
 
-## Requirements
-
-- Node.js >= 20.0.0
-- npm >= 11.0.0
-
 ## Installation
 
 ```bash
