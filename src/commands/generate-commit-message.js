@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import simpleGit from 'simple-git';
 import clipboardy from 'clipboardy';
 
-const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'http://localhost:5000';
+const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'https://commit-messages-production-denihs.svc-us5.zcloud.ws';
 const API_URL = `${API_HOSTNAME}/api/generate-commit-message`;
 
 const git = simpleGit();

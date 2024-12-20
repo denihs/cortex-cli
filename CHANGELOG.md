@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.3] - 2024-12-19
+## [1.0.6] - 2024-12-20
+### Changed
+- Updated default API hostname from localhost to production URL (https://commit-messages-production-denihs.svc-us5.zcloud.ws)
+
+## [1.0.5] - 2024-12-19
 
 ### Added
 - New `--stageAll` flag to automatically stage all changes before generating the commit message
