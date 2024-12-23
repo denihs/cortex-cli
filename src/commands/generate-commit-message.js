@@ -279,7 +279,7 @@ function convertSshToHttps(url, service) {
     .replace(/\/$/, ''); // Remove trailing slash if present
 }
 
-async function saveCommitMessage({ message, token }) {
+async function saveCommitMessage({ message, token, diff }) {
   try {
     const commitHash = await git.revparse(['HEAD']);
     
@@ -316,6 +316,7 @@ async function saveCommitMessage({ message, token }) {
       body: JSON.stringify({
         commitMessage: message,
         commitLink,
+        diff,
       }),
     });
 
@@ -331,7 +332,7 @@ async function saveCommitMessage({ message, token }) {
   }
 }
 
-async function commitChanges(message, shouldPush = false, options = {}, token) {
+async function commitChanges({ message, shouldPush = false, token, diff }) {
   try {
     const answer = await new Promise(resolve => {
       const action = shouldPush ? 'commit and push' : 'commit';
@@ -346,7 +347,7 @@ async function commitChanges(message, shouldPush = false, options = {}, token) {
       console.log(chalk.green('Changes committed successfully!'));
 
       // Save the commit message after successful commit
-      await saveCommitMessage({ message, token });
+      await saveCommitMessage({ message, token, diff });
 
       if (shouldPush) {
         const currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
@@ -380,9 +381,9 @@ export async function generateCommitMessage(cliOptions) {
     console.log(chalk.white(message));
 
     if (options.commitAndPush) {
-      await commitChanges(message, true, options, token);
+      await commitChanges({ message, shouldPush: true, token, diff });
     } else if (options.commitStaged) {
-      await commitChanges(message, false, options, token);
+      await commitChanges({ message, shouldPush: false, token, diff });
     }
 
     process.exit(0);
