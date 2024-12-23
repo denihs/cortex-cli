@@ -58,26 +58,38 @@ function mergeOptions(cliOptions) {
       exclude: normalizeArrayOption(configOptions.exclude),
     };
 
-    const normalizedCliOptions = {
-      ...cliOptions,
-      include: 
-        normalizedConfigOptions.include.length > 0 
-          ? normalizedConfigOptions.include 
-          : normalizeArrayOption(cliOptions.include),
-      exclude: 
-        normalizedConfigOptions.exclude.length > 0 
-        ? normalizedConfigOptions.exclude 
-        : normalizeArrayOption(cliOptions.exclude),
-    };
+    // Normalize CLI options, converting string booleans to actual booleans
+    const normalizedCliOptions = Object.fromEntries(
+      Object.entries(cliOptions)
+        .filter(([_, value]) => value !== undefined)
+        .map(([key, value]) => {
+          console.log(key, value);
+          // If the option is defined as boolean in defaultOptions, convert string to boolean
+          if (typeof defaultOptions[key] === 'boolean') {
+            return [key, value === true || value === 'true'];
+          }
+          return [key, value];
+        })
+    );
 
     const finalOptions = {
       ...defaultOptions,
       ...normalizedConfigOptions,
-      ...normalizedCliOptions,
+      ...{
+        ...normalizedCliOptions,
+        include: 
+          normalizedConfigOptions.include.length > 0 
+            ? normalizedConfigOptions.include 
+            : normalizeArrayOption(cliOptions.include),
+        exclude: 
+          normalizedConfigOptions.exclude.length > 0 
+          ? normalizedConfigOptions.exclude 
+          : normalizeArrayOption(cliOptions.exclude),
+      }
     };
 
     if (finalOptions.verbose) {
-      console.log(chalk.blue('\Configuration:'));
+      console.log(chalk.blue('\nConfiguration:'));
       console.log(chalk.white(JSON.stringify(finalOptions, null, 2)));
       console.log('');
     }
