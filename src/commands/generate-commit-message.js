@@ -318,6 +318,7 @@ async function saveCommitMessage({ message, token }) {
       }),
     });
 
+    console.log(chalk.green(`Commit: ${commitLink}`));
     if (!response.ok) {
       const error = await response.json();
       console.error(chalk.yellow('Warning: Failed to save commit message:'), error.error || 'Unknown error');
