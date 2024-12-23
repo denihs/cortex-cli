@@ -278,7 +278,7 @@ function convertSshToHttps(url, service) {
     .replace(/\.git$/, '');
 }
 
-async function saveCommitMessage({ message, header, token }) {
+async function saveCommitMessage({ message, token }) {
   try {
     const commitHash = await git.revparse(['HEAD']);
     
@@ -315,7 +315,6 @@ async function saveCommitMessage({ message, header, token }) {
       body: JSON.stringify({
         commitMessage: message,
         commitLink,
-        commitHeader: header || undefined
       }),
     });
 
@@ -345,7 +344,7 @@ async function commitChanges(message, shouldPush = false, options = {}, token) {
       console.log(chalk.green('Changes committed successfully!'));
 
       // Save the commit message after successful commit
-      await saveCommitMessage({ message, header: options.header, token });
+      await saveCommitMessage({ message, token });
 
       if (shouldPush) {
         const currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
