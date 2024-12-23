@@ -24,6 +24,7 @@ program
   .option('--commitAndPush', 'Commit staged changes and push them to the remote repository')
   .option('--include <patterns...>', 'Include only files matching these patterns when staging (supports glob patterns)')
   .option('--exclude <patterns...>', 'Exclude files matching these patterns when staging (supports glob patterns)')
+  .option('--verbose', 'Show detailed information about the current configuration and execution')
   .action(generateCommitMessage);
 
 program.parse(); 

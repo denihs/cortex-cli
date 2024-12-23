@@ -157,6 +157,7 @@ cortex commit-message [options]
 - `--header <text>`: Add a custom header to the commit message (will be added above the generated message)
 - `--commitStaged`: After generating the message, prompt to commit staged changes
 - `--commitAndPush`: After generating the message, prompt to commit staged changes and push them to the remote repository
+- `--verbose`: Show detailed information about the current configuration and execution
 
 ### Examples
 

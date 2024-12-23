@@ -46,11 +46,11 @@ function mergeOptions(cliOptions) {
     header: '',
     include: [],
     exclude: [],
+    verbose: false,
   };
 
   return async () => {
     const configOptions = await loadConfigFile();
-    
     const normalizedConfigOptions = {
       ...configOptions,
       include: normalizeArrayOption(configOptions.include),
@@ -59,15 +59,29 @@ function mergeOptions(cliOptions) {
 
     const normalizedCliOptions = {
       ...cliOptions,
-      include: normalizeArrayOption(cliOptions.include),
-      exclude: normalizeArrayOption(cliOptions.exclude),
+      include: 
+        normalizedConfigOptions.include.length > 0 
+          ? normalizedConfigOptions.include 
+          : normalizeArrayOption(cliOptions.include),
+      exclude: 
+        normalizedConfigOptions.exclude.length > 0 
+        ? normalizedConfigOptions.exclude 
+        : normalizeArrayOption(cliOptions.exclude),
     };
 
-    return {
+    const finalOptions = {
       ...defaultOptions,
       ...normalizedConfigOptions,
       ...normalizedCliOptions,
     };
+
+    if (finalOptions.verbose) {
+      console.log(chalk.blue('\Configuration:'));
+      console.log(chalk.white(JSON.stringify(finalOptions, null, 2)));
+      console.log('');
+    }
+
+    return finalOptions;
   };
 }
 
@@ -97,12 +111,27 @@ async function validateGitRepository() {
 
 async function getModifiedFiles() {
   const status = await git.status();
-  return [
+  const files = [
     ...status.not_added,
     ...status.modified,
     ...status.deleted,
     ...status.renamed.map(file => file.to),
+    ...status.created
   ];
+
+  // Normalize paths to use forward slashes and remove any leading/trailing whitespace
+  const normalizedFiles = files.map(file => file.trim().replace(/\\/g, '/'));
+
+  // Get the current directory name
+  const currentDir = process.cwd().split(path.sep).pop();
+
+  // Remove redundant directory prefix if it matches current directory
+  return normalizedFiles.map(file => {
+    if (file.startsWith(`${currentDir}/`)) {
+      return file.substring(currentDir.length + 1);
+    }
+    return file;
+  });
 }
 
 async function stageAllChanges(options) {
@@ -114,29 +143,66 @@ async function stageAllChanges(options) {
       return;
     }
 
+    console.log(chalk.blue('\nFound modified files:'));
+    modifiedFiles.forEach(file => console.log(chalk.gray(`  - ${file}`)));
+
     let filesToStage = modifiedFiles;
 
     if (options.include.length > 0) {
       filesToStage = micromatch(filesToStage, options.include);
+      console.log(chalk.blue('\nFiles matching include patterns:'), options.include);
+      filesToStage.forEach(file => console.log(chalk.gray(`  - ${file}`)));
     }
 
     if (options.exclude.length > 0) {
       filesToStage = micromatch.not(filesToStage, options.exclude);
+      console.log(chalk.blue('\nFiles after applying exclude patterns:'), options.exclude);
+      filesToStage.forEach(file => console.log(chalk.gray(`  - ${file}`)));
     }
 
     if (filesToStage.length === 0) {
-      console.log(chalk.yellow('No files match the include/exclude patterns.'));
+      console.log(chalk.yellow('\nNo files match the include/exclude patterns.'));
       return;
     }
 
+    // Stage files one by one and handle errors for each file
+    const stagedFiles = [];
+    const failedFiles = [];
+
+    console.log(chalk.blue('\nAttempting to stage files...'));
     for (const file of filesToStage) {
-      await git.add(file);
+      try {
+        await git.add([file]);
+        stagedFiles.push(file);
+      } catch (error) {
+        failedFiles.push({ file, error: error.message });
+      }
     }
 
-    console.log(chalk.green(`Staged ${filesToStage.length} files:`));
-    filesToStage.forEach(file => console.log(chalk.white(`  - ${file}`)));
+    // Report success
+    if (stagedFiles.length > 0) {
+      console.log(chalk.green(`\nSuccessfully staged ${stagedFiles.length} files:`));
+      stagedFiles.forEach(file => console.log(chalk.white(`  ✓ ${file}`)));
+    }
+
+    // Report failures
+    if (failedFiles.length > 0) {
+      console.log(chalk.yellow(`\nFailed to stage ${failedFiles.length} files:`));
+      failedFiles.forEach(({ file, error }) => {
+        console.log(chalk.red(`  ✗ ${file}`));
+        console.log(chalk.gray(`    Error: ${error}`));
+        console.log(chalk.gray(`    Working directory: ${process.cwd()}`));
+      });
+    }
+
+    // If no files were staged successfully, exit
+    if (stagedFiles.length === 0) {
+      console.error(chalk.red('\nNo files were staged successfully.'));
+      process.exit(1);
+    }
   } catch (error) {
     console.error(chalk.red('Error staging changes:'), error.message);
+    console.error(chalk.gray(`Working directory: ${process.cwd()}`));
     process.exit(1);
   }
 }
