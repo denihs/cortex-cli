@@ -274,7 +274,7 @@ function formatCommitMessage(header, apiMessage) {
 
 function convertSshToHttps(url, service) {
   return url
-    .replace(/^git@${service}:/, 'https://${service}/')
+    .replace(new RegExp(`^git@${service}:`), `https://${service}/`)
     .replace(/\.git$/, '');
 }
 
