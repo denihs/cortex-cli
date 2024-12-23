@@ -36,6 +36,32 @@ You can also create a `.cortexrc` file in your project root to set default optio
 }
 ```
 
+#### IDE Support
+
+To make your IDE treat `.cortexrc` as a JSON file:
+
+**VS Code**
+The repository includes `.vscode/settings.json` with the correct configuration:
+```json
+{
+  "files.associations": {
+    ".cortexrc": "json"
+  }
+}
+```
+
+**JetBrains IDEs (WebStorm, IntelliJ, etc.)**
+The repository includes `.idea/fileTypes/cortexrc.xml` with the correct configuration. If you're not using the provided configuration:
+1. Go to Preferences/Settings → Editor → File Types
+2. Find "JSON" in the list
+3. Add `cortexrc` pattern under "File name patterns"
+
+**Vim/Neovim**
+Add to your configuration:
+```vim
+autocmd BufNewFile,BufRead .cortexrc setfiletype json
+```
+
 ### Configuration Priority
 
 The CLI follows a strict priority order when applying configurations:
