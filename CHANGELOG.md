@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2024-12-23
+### Fixed
+- Fixed boolean CLI options handling to properly accept true/false values
+- Improved configuration merging to correctly prioritize CLI boolean options over config file
+- Added proper type definitions for boolean flags in Commander.js options
+
 ## [2.0.0] - 2024-12-23
 ### Added
 - New `.cortexrc` configuration file support for setting default options
