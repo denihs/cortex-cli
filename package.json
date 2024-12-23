@@ -17,7 +17,7 @@
     "cli",
     "git",
     "commit",
-    "message", 
+    "message",
     "generator"
   ],
   "author": "",
@@ -35,8 +35,8 @@
     "clipboardy": "^4.0.0",
     "commander": "^11.1.0",
     "dotenv": "^16.3.1",
-    "simple-git": "^3.22.0",
-    "micromatch": "^4.0.8"
+    "micromatch": "^4.0.8",
+    "simple-git": "^3.22.0"
   },
   "files": [
     "src/"
