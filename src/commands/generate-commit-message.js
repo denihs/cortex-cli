@@ -7,6 +7,7 @@ import micromatch from 'micromatch';
 
 const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'https://commit-messages-production-denihs.svc-us5.zcloud.ws';
 const API_URL = `${API_HOSTNAME}/api/generate-commit-message`;
+const SAVE_MESSAGE_URL = `${API_HOSTNAME}/api/save-message`;
 
 const git = simpleGit();
 
@@ -271,7 +272,65 @@ function formatCommitMessage(header, apiMessage) {
   return `${header}\n\n${apiMessage}`;
 }
 
-async function commitChanges(message, shouldPush = false) {
+function convertSshToHttps(url, service) {
+  return url
+    .replace(/^git@${service}:/, 'https://${service}/')
+    .replace(/\.git$/, '');
+}
+
+async function saveCommitMessage({ message, header, token }) {
+  try {
+    const commitHash = await git.revparse(['HEAD']);
+    
+    // Get the remote URL and parse it to construct the commit link
+    const remotes = await git.remote(['get-url', 'origin']);
+    const remoteUrl = remotes.trim();
+    
+    let commitLink = '';
+
+    if (remoteUrl) {
+      // Handle different git hosting services
+      if (remoteUrl.includes('github.com')) {
+        const httpsUrl = convertSshToHttps(remoteUrl, 'github.com');
+        commitLink = `${httpsUrl}/commit/${commitHash}`;
+      } else if (remoteUrl.includes('gitlab.com')) {
+        const httpsUrl = convertSshToHttps(remoteUrl, 'gitlab.com');
+        commitLink = `${httpsUrl}/-/commit/${commitHash}`;
+      } else if (remoteUrl.includes('bitbucket.org')) {
+        const httpsUrl = convertSshToHttps(remoteUrl, 'bitbucket.org');
+        commitLink = `${httpsUrl}/commits/${commitHash}`;
+      } else {
+        commitLink = commitHash;
+      }
+    } else {
+      commitLink = commitHash;
+    }
+
+    const response = await fetch(SAVE_MESSAGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${token}`,
+      },
+      body: JSON.stringify({
+        commitMessage: message,
+        commitLink,
+        commitHeader: header || undefined
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error(chalk.yellow('Warning: Failed to save commit message:'), error.error || 'Unknown error');
+      // Don't exit process, as this is a non-critical operation
+    }
+  } catch (error) {
+    console.error(chalk.yellow('Warning: Failed to save commit message:'), error.message);
+    // Don't exit process, as this is a non-critical operation
+  }
+}
+
+async function commitChanges(message, shouldPush = false, options = {}, token) {
   try {
     const answer = await new Promise(resolve => {
       const action = shouldPush ? 'commit and push' : 'commit';
@@ -284,6 +343,9 @@ async function commitChanges(message, shouldPush = false) {
     if (answer === 'y' || answer === 'yes') {
       await git.commit(message);
       console.log(chalk.green('Changes committed successfully!'));
+
+      // Save the commit message after successful commit
+      await saveCommitMessage({ message, header: options.header, token });
 
       if (shouldPush) {
         const currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
@@ -317,9 +379,9 @@ export async function generateCommitMessage(cliOptions) {
     console.log(chalk.white(message));
 
     if (options.commitAndPush) {
-      await commitChanges(message, true);
+      await commitChanges(message, true, options, token);
     } else if (options.commitStaged) {
-      await commitChanges(message, false);
+      await commitChanges(message, false, options, token);
     }
 
     process.exit(0);
