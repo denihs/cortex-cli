@@ -273,10 +273,10 @@ function formatCommitMessage(header, apiMessage) {
 }
 
 function convertSshToHttps(url, service) {
-  console.log(url);
   return url
     .replace(new RegExp(`^git@${service}:`), `https://${service}/`)
-    .replace(/\.git$/, '');
+    .replace(/\.git$/, '')
+    .replace(/\/$/, ''); // Remove trailing slash if present
 }
 
 async function saveCommitMessage({ message, token }) {
