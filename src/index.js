@@ -3,14 +3,22 @@
 import { program } from 'commander';
 import dotenv from 'dotenv';
 import { generateCommitMessage } from './commands/generate-commit-message.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // Load environment variables
 dotenv.config();
 
+// Get package.json version
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json')));
+
 program
   .name('cortex')
   .description('CLI tool to generate commit messages based on repository changes')
-  .version('1.0.0');
+  .version(packageJson.version);
 
 program
   .command('commit-message')
