@@ -234,13 +234,13 @@ async function getDiff(options) {
     }
 
     let diff = '';
-    
+    const   diffOptions = ['--minimal', '--ignore-all-space', '--ignore-blank-lines']
     if (options.all) {
-      diff = await git.diff();
+      diff = await git.diff(diffOptions);
     } else if (options.onlyUnstaged) {
-      diff = await git.diff();
+      diff = await git.diff(diffOptions);
     } else {
-      diff = await git.diff(['--cached']);
+      diff = await git.diff(['--cached', ...diffOptions]);
     }
 
     if (!diff) {
