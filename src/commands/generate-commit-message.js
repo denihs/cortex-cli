@@ -272,6 +272,11 @@ async function callCommitMessageAPI(diff, token) {
     }
 
     const data = await response.json();
+
+    if (data.usageMessage) {
+      console.log(`\n${chalk.yellow(data.usageMessage)}`);
+    }
+
     return data.message;
   } catch (error) {
     console.error(chalk.red('Error calling API:'), error.message);
