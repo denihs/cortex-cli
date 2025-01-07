@@ -1,5 +1,9 @@
 # Cortex CLI
 
+This CLI is used to generate commit messages for you using AI! Visit https://commits.denyhs.com/ to learn more ❤️
+
+---
+
 A command-line tool to generate commit messages based on your repository changes.
 
 ## Installation
