@@ -1,5 +1,12 @@
 # Cortex CLI
 
+[![NPM Version](https://img.shields.io/npm/v/@denyhs/cortex-cli)](https://www.npmjs.com/package/@denyhs/cortex-cli)
+[![NPM Downloads](https://img.shields.io/npm/dm/@denyhs/cortex-cli)](https://www.npmjs.com/package/@denyhs/cortex-cli)
+[![GitHub License](https://img.shields.io/github/license/denyhs/cortex-cli)](https://github.com/denyhs/cortex-cli)
+[![Twitter Follow](https://img.shields.io/twitter/follow/ddenyhs?style=social)](https://x.com/ddenyhs)
+[![Website](https://img.shields.io/badge/website-commits.denyhs.com-blue)](https://commits.denyhs.com/)
+[![Author](https://img.shields.io/badge/author-Denilson%20Silva-blue)](https://denilsonsilva.dev/)
+
 This CLI is used to generate commit messages for you using AI! Visit https://commits.denyhs.com/ to learn more ❤️
 
 ---

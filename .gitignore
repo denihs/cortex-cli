@@ -41,3 +41,5 @@ logs/
 
 # Optional eslint cache
 .eslintcache 
+
+.idea/
