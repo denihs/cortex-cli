@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2025-01-08
+### Changed
+- Renamed `stageChanges` to `stageAllChanges` for better clarity
+- Renamed `commitAndPush` to `commitAndPushStaged` for consistency with other staged-related flags
+- Removed support for different change scopes (`--onlyStaged`, `--onlyUnstaged`, `--all` flags)
+
+### Added
+- Validation for configuration options in `.cortexrc` file - now throws an error if unknown options are found
+
 ## [2.0.7] - 2025-01-03
 ### Added
 - Log usage message from API

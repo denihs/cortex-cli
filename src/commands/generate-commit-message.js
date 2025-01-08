@@ -32,18 +32,42 @@ async function loadConfigFile() {
     return {};
   }
 }
+
 function normalizeArrayOption(option) {
   return Array.isArray(option) ? option : option ? [option] : [];
 }
 
+function getNormalizedArrayOption(option) {
+  return {
+    include: normalizeArrayOption(option.include),
+    exclude: normalizeArrayOption(option.exclude),
+  };
+}
+
+function getIncludeExcludeOptions({ cliOptions, configOptions }) {
+  const normalizedCliOptions = getNormalizedArrayOption(cliOptions);
+  const normalizedConfigOptions = getNormalizedArrayOption(configOptions);
+  return {
+    include: normalizedCliOptions.include.length > 0 ? normalizedCliOptions.include : normalizedConfigOptions.include,
+    exclude: normalizedCliOptions.exclude.length > 0 ? normalizedCliOptions.exclude : normalizedConfigOptions.exclude,
+  };
+}
+
+function getCommitOptions({ cliOptions, configOptions, defaultOptions }) {
+  const getWithDefault = (options) => ({ ...defaultOptions, ...options });
+
+  const { commitStaged, commitAndPushStaged } = cliOptions.commitStaged || cliOptions.commitAndPushStaged 
+    ? getWithDefault(cliOptions) 
+    : getWithDefault(configOptions);
+
+  return { commitStaged, commitAndPushStaged };
+}
+
 function mergeOptions(cliOptions) {
   const defaultOptions = {
-    onlyStaged: false,
-    onlyUnstaged: false,
-    all: false,
-    stageChanges: false,
+    stageAllChanges: false,
     commitStaged: false,
-    commitAndPush: false,
+    commitAndPushStaged: false,
     header: '',
     include: [],
     exclude: [],
@@ -52,40 +76,19 @@ function mergeOptions(cliOptions) {
 
   return async () => {
     const configOptions = await loadConfigFile();
-    const normalizedConfigOptions = {
-      ...configOptions,
-      include: normalizeArrayOption(configOptions.include),
-      exclude: normalizeArrayOption(configOptions.exclude),
-    };
 
-    // Normalize CLI options, converting string booleans to actual booleans
-    const normalizedCliOptions = Object.fromEntries(
-      Object.entries(cliOptions)
-        .filter(([_, value]) => value !== undefined)
-        .map(([key, value]) => {
-          console.log(key, value);
-          // If the option is defined as boolean in defaultOptions, convert string to boolean
-          if (typeof defaultOptions[key] === 'boolean') {
-            return [key, value === true || value === 'true'];
-          }
-          return [key, value];
-        })
-    );
+    // Validate config options against default options
+    const invalidOptions = Object.keys(configOptions).filter(key => !(key in defaultOptions));
+    if (invalidOptions.length > 0) {
+      throw new Error(`Invalid configuration options found in .cortexrc: ${invalidOptions.join(', ')}`);
+    }
 
     const finalOptions = {
       ...defaultOptions,
-      ...normalizedConfigOptions,
-      ...{
-        ...normalizedCliOptions,
-        include: 
-          normalizedConfigOptions.include.length > 0 
-            ? normalizedConfigOptions.include 
-            : normalizeArrayOption(cliOptions.include),
-        exclude: 
-          normalizedConfigOptions.exclude.length > 0 
-          ? normalizedConfigOptions.exclude 
-          : normalizeArrayOption(cliOptions.exclude),
-      }
+      ...configOptions,
+      ...cliOptions,
+      ...getCommitOptions({ cliOptions, configOptions, defaultOptions }),
+      ...getIncludeExcludeOptions({ cliOptions, configOptions }),
     };
 
     if (finalOptions.verbose) {
@@ -222,26 +225,19 @@ async function stageAllChanges(options) {
 
 async function getDiff(options) {
   try {
-    if (options.stageChanges) {
+    if (options.stageAllChanges) {
       await stageAllChanges(options);
     }
 
     const status = await git.status();
     
-    if (!options.onlyUnstaged && !options.all && status.staged.length === 0) {
+    if (status.staged.length === 0) {
       console.error(chalk.yellow('No staged changes found.'));
       process.exit(0);
     }
 
-    let diff = '';
-    const   diffOptions = ['--minimal', '--ignore-all-space', '--ignore-blank-lines']
-    if (options.all) {
-      diff = await git.diff(diffOptions);
-    } else if (options.onlyUnstaged) {
-      diff = await git.diff(diffOptions);
-    } else {
-      diff = await git.diff(['--cached', ...diffOptions]);
-    }
+    const diffOptions = ['--minimal', '--ignore-all-space', '--ignore-blank-lines']
+    const diff = await git.diff(['--cached', ...diffOptions]);
 
     if (!diff) {
       console.error(chalk.yellow('No changes found to generate commit message.'));
@@ -399,7 +395,7 @@ export async function generateCommitMessage(cliOptions) {
     console.log(chalk.green('\nGenerated commit message (copied to clipboard):\n'));
     console.log(chalk.white(message));
 
-    if (options.commitAndPush) {
+    if (options.commitAndPushStaged) {
       await commitChanges({ message, shouldPush: true, token, diff });
     } else if (options.commitStaged) {
       await commitChanges({ message, shouldPush: false, token, diff });

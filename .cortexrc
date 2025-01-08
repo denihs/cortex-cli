@@ -1,5 +1,5 @@
 {
     "header": "Cortex CLI",
-    "commitAndPush": true,
-    "stageChanges": true
+    "commitAndPushStaged": true,
+    "stageAllChanges": true
 }

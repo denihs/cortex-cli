@@ -23,16 +23,13 @@ program
 program
   .command('commit-message')
   .description('Generate a commit message based on staged changes')
-  .option('--onlyStaged <value>', 'Generate message only for staged changes (default behavior)')
-  .option('--onlyUnstaged <value>', 'Generate message only for unstaged changes')
-  .option('--all <value>', 'Generate message for all changes (staged and unstaged)')
-  .option('--stageChanges <value>', 'Stage changes before generating the message')
+  .option('--stageAllChanges', 'Stage all changes before generating the message')
+  .option('--include <patterns...>', '<Used when stageAllChanges is active> Include only files matching these patterns when staging (supports glob patterns)')
+  .option('--exclude <patterns...>', '<Used when stageAllChanges is active> Exclude files matching these patterns when staging (supports glob patterns)')
   .option('--header <text>', 'Add a custom header to the commit message')
-  .option('--commitStaged <value>', 'Commit staged changes with the generated message')
-  .option('--commitAndPush <value>', 'Commit staged changes and push them to the remote repository')
-  .option('--include <patterns...>', 'Include only files matching these patterns when staging (supports glob patterns)')
-  .option('--exclude <patterns...>', 'Exclude files matching these patterns when staging (supports glob patterns)')
-  .option('--verbose <value>', 'Show detailed information about the current configuration and execution')
+  .option('--commitStaged', 'Commit staged changes with the generated message')
+  .option('--commitAndPushStaged', 'Commit staged changes and push them to the remote repository with the generated message')
+  .option('--verbose', 'Show detailed information about the current configuration and execution')
   .action(generateCommitMessage);
 
 program.parse(); 
