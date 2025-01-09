@@ -7,7 +7,7 @@ import micromatch from 'micromatch';
 
 const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'https://commit-messages-production-denihs.svc-us5.zcloud.ws';
 const API_URL = `${API_HOSTNAME}/api/generate-commit-message`;
-const SAVE_MESSAGE_URL = `${API_HOSTNAME}/api/save-message`;
+const SAVE_COMMIT_LINK_URL = `${API_HOSTNAME}/api/save-commit-link`;
 
 const git = simpleGit();
 
@@ -251,40 +251,6 @@ async function getDiff(options) {
   }
 }
 
-async function callCommitMessageAPI(diff, token) {
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${token}`,
-      },
-      body: JSON.stringify({ diff }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to generate commit message');
-    }
-
-    const data = await response.json();
-
-    if (data.usageMessage) {
-      console.log(`\n${chalk.yellow(data.usageMessage)}`);
-    }
-
-    return data.message;
-  } catch (error) {
-    console.error(chalk.red('Error calling API:'), error.message);
-    process.exit(1);
-  }
-}
-
-function formatCommitMessage(header, apiMessage) {
-  if (!header) return apiMessage;
-  return `${header}\n\n${apiMessage}`;
-}
-
 function convertSshToHttps(url, service) {
   return url
     .replace(new RegExp(`^git@${service}:`), `https://${service}/`)
@@ -292,9 +258,19 @@ function convertSshToHttps(url, service) {
     .replace(/\/$/, ''); // Remove trailing slash if present
 }
 
-async function saveCommitMessage({ message, token, diff, shouldPush }) {
-  try {
-    const commitHash = await git.revparse(['HEAD']);
+function handleFetch({ url, body, token, method = 'POST' }) {
+  return fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+async function saveCommitLink({ token, messageId }) {
+  const commitHash = await git.revparse(['HEAD']);
     
     // Get the remote URL and parse it to construct the commit link
     const remotes = await git.remote(['get-url', 'origin']);
@@ -320,37 +296,49 @@ async function saveCommitMessage({ message, token, diff, shouldPush }) {
       commitLink = commitHash;
     }
 
-    const response = await fetch(SAVE_MESSAGE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${token}`,
-      },
-      body: JSON.stringify({
-        commitMessage: message,
-        commitLink,
-        diff,
-      }),
+    try {
+      await handleFetch({ 
+        url: SAVE_COMMIT_LINK_URL, 
+        body: { commitLink, messageId }, 
+        token,
+      });
+    } catch (error) {
+      console.error(chalk.yellow('Warning: Failed to save commit link:'), error.message);
+    }
+
+    return commitLink;
+}
+
+async function callCommitMessageAPI({ diff, token, options }) {
+  try {
+    const response = await handleFetch({ 
+      url: API_URL, 
+      body: { diff, header: options.header }, 
+      token
     });
 
-    if (shouldPush) {
-      console.log(chalk.green(`Commit: ${commitLink}`));
-    }
     if (!response.ok) {
       const error = await response.json();
-      console.error(chalk.yellow('Warning: Failed to save commit message:'), error.error || 'Unknown error');
-      // Don't exit process, as this is a non-critical operation
+      throw new Error(error.error || 'Failed to generate commit message');
     }
+
+    const data = await response.json();
+
+    if (data.usageMessage) {
+      console.log(`\n${chalk.yellow(data.usageMessage)}`);
+    }
+
+    return { message: data.message, id: data.id };
   } catch (error) {
-    console.error(chalk.yellow('Warning: Failed to save commit message:'), error.message);
-    // Don't exit process, as this is a non-critical operation
+    console.error(chalk.red('Error calling API:'), error.message);
+    process.exit(1);
   }
 }
 
-async function commitChanges({ message, shouldPush = false, token, diff }) {
+async function commitChanges({ message, shouldPush = false, token, messageId }) {
   try {
     const answer = await new Promise(resolve => {
-      const action = shouldPush ? 'commit and push' : 'commit';
+      const action = shouldPush ? 'COMMIT AND PUSH' : 'COMMIT';
       process.stdout.write(chalk.yellow(`Do you want to ${action} the staged changes with this message? (y/yes): `));
       process.stdin.once('data', data => {
         resolve(data.toString().trim().toLowerCase());
@@ -361,13 +349,15 @@ async function commitChanges({ message, shouldPush = false, token, diff }) {
       await git.commit(message);
       console.log(chalk.green('Changes committed successfully!'));
 
-      // Save the commit message after successful commit
-      await saveCommitMessage({ message, token, diff, shouldPush });
+      if (shouldPush) {  
+        const commitLink = await saveCommitLink({ token, messageId });
 
-      if (shouldPush) {
         const currentBranch = await git.revparse(['--abbrev-ref', 'HEAD']);
         await git.push('origin', currentBranch);
         console.log(chalk.green(`Changes pushed to origin/${currentBranch} successfully!`));
+        if (commitLink) {
+          console.log(chalk.green(`Commit link: ${commitLink}`));
+        }
       }
     }
 
@@ -387,18 +377,16 @@ export async function generateCommitMessage(cliOptions) {
 
     const diff = await getDiff(options);
 
-    const apiMessage = await callCommitMessageAPI(diff, token);
-
-    const message = formatCommitMessage(options.header, apiMessage);
+    const { message, id } = await callCommitMessageAPI({ diff, token, options });
 
     await clipboardy.write(message);
     console.log(chalk.green('\nGenerated commit message (copied to clipboard):\n'));
     console.log(chalk.white(message));
 
     if (options.commitAndPushStaged) {
-      await commitChanges({ message, shouldPush: true, token, diff });
+      await commitChanges({ message, shouldPush: true, token, messageId: id });
     } else if (options.commitStaged) {
-      await commitChanges({ message, shouldPush: false, token, diff });
+      await commitChanges({ message, shouldPush: false, token });
     }
 
     process.exit(0);
