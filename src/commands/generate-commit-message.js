@@ -11,6 +11,34 @@ const SAVE_COMMIT_LINK_URL = `${API_HOSTNAME}/api/save-commit-link`;
 
 const git = simpleGit();
 
+// File patterns that should be treated as binary or large files
+const BINARY_FILE_PATTERNS = [
+  '*.svg',
+  '*.png',
+  '*.jpg',
+  '*.jpeg',
+  '*.gif',
+  '*.ico',
+  '*.webp',
+  '*.pdf',
+  '*.mp4',
+  '*.webm',
+  '*.mov',
+  '*.mp3',
+  '*.wav',
+  '*.woff',
+  '*.woff2',
+  '*.ttf',
+  '*.eot',
+  'package-lock.json',
+  'yarn.lock',
+  'pnpm-lock.yaml'
+];
+
+function shouldExcludeContent(filePath) {
+  return micromatch.isMatch(filePath, BINARY_FILE_PATTERNS, { basename: true });
+}
+
 async function loadConfigFile() {
   try {
     const configPath = path.join(process.cwd(), '.cortexrc');
@@ -236,15 +264,43 @@ async function getDiff(options) {
       process.exit(0);
     }
 
-    const diffOptions = ['--minimal', '--ignore-all-space', '--ignore-blank-lines']
-    const diff = await git.diff(['--cached', ...diffOptions]);
+    // Get list of staged files
+    const stagedFiles = status.staged;
+    
+    // For binary/large files, we'll create a custom diff that only shows the file was modified
+    const customDiffs = [];
+    
+    for (const file of stagedFiles) {
+      if (shouldExcludeContent(file)) {
+        const action = status.created.includes(file) 
+          ? 'added' 
+          : status.deleted.includes(file) 
+            ? 'deleted' 
+            : 'modified';
+        customDiffs.push(
+          `diff --git a/${file} b/${file}`,
+          `--- a/${file}`,
+          `+++ b/${file}`,
+          `@@ -1 +1 @@`,
+          `${action === 'deleted' ? '-' : '+'} Binary file ${file} was ${action}`
+        );
+      }
+    }
 
-    if (!diff) {
+    // Get the regular diff for non-binary files
+    const diffOptions = ['--minimal', '--ignore-all-space', '--ignore-blank-lines'];
+    
+    // Add binary file exclusion patterns
+    const excludePatterns = BINARY_FILE_PATTERNS.map(pattern => `:!${pattern}`);
+    const diff = await git.diff(['--cached', ...diffOptions, '--', ...excludePatterns]);
+
+    if (!diff && customDiffs.length === 0) {
       console.error(chalk.yellow('No changes found to generate commit message.'));
       process.exit(0);
     }
 
-    return diff;
+    // Combine regular diff with custom diffs for binary files
+    return [...customDiffs, diff].filter(Boolean).join('\n');
   } catch (error) {
     console.error(chalk.red('Error getting git diff:'), error.message);
     process.exit(1);

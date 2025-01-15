@@ -1,6 +1,6 @@
 {
   "name": "@denyhs/cortex-cli",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "CLI tool to generate commit messages based on repository changes",
   "main": "src/index.js",
   "type": "module",
