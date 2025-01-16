@@ -158,6 +158,7 @@ cortex commit-message [options]
 - `--include <patterns...>`: Include only files matching these patterns when staging (supports glob patterns)
 - `--exclude <patterns...>`: Exclude files matching these patterns when staging (supports glob patterns)
 - `--header <text>`: Add a custom header to the commit message (will be added above the generated message)
+- `--preScript <command>`: Execute a command before generating the commit message (e.g., linting, tests)
 - `--commitStaged`: After generating the message, prompt to commit staged changes
 - `--commitAndPushStaged`: After generating the message, prompt to commit staged changes and push them to the remote repository
 - `--verbose`: Show detailed information about the current configuration and execution
@@ -167,6 +168,12 @@ cortex commit-message [options]
 ```bash
 # Generate message for staged changes
 cortex commit-message
+
+# Run linter before generating message
+cortex commit-message --preScript "npm run lint"
+
+# Run tests and stage all changes if they pass
+cortex commit-message --preScript "npm test" --stageAllChanges
 
 # Stage specific files and generate message
 cortex commit-message --stageAllChanges --include "src/**/*.js" --exclude "**/*.test.js"

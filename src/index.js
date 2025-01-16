@@ -27,6 +27,7 @@ program
   .option('--include <patterns...>', '<Used when stageAllChanges is active> Include only files matching these patterns when staging (supports glob patterns)')
   .option('--exclude <patterns...>', '<Used when stageAllChanges is active> Exclude files matching these patterns when staging (supports glob patterns)')
   .option('--header <text>', 'Add a custom header to the commit message')
+  .option('--preScript <command>', 'Execute a command before generating the commit message')
   .option('--commitStaged', 'Commit staged changes with the generated message')
   .option('--commitAndPushStaged', 'Commit staged changes and push them to the remote repository with the generated message')
   .option('--verbose', 'Show detailed information about the current configuration and execution')

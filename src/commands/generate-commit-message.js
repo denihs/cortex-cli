@@ -100,6 +100,7 @@ function mergeOptions(cliOptions) {
     include: [],
     exclude: [],
     verbose: false,
+    preScript: '',
   };
 
   return async () => {
@@ -424,12 +425,28 @@ async function commitChanges({ message, shouldPush = false, token, messageId }) 
   }
 }
 
+async function executePreScript(command) {
+  try {
+    console.log(chalk.blue('\nExecuting pre-script command:'), chalk.white(command));
+    const { execSync } = await import('child_process');
+    execSync(command, { stdio: 'inherit' });
+    console.log(chalk.green('Pre-script executed successfully!'));
+  } catch (error) {
+    console.error(chalk.red('Error executing pre-script:'), error.message);
+    process.exit(1);
+  }
+}
+
 export async function generateCommitMessage(cliOptions) {
   try {
     const token = validateEnvironment();
     await validateGitRepository();
 
     const options = await mergeOptions(cliOptions)();
+
+    if (options.preScript) {
+      await executePreScript(options.preScript);
+    }
 
     const diff = await getDiff(options);
 
