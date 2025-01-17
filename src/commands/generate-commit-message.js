@@ -5,7 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import micromatch from 'micromatch';
 
-const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'https://commit-messages-production-denihs.svc-us5.zcloud.ws';
+const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'https://commits.denyhs.com';
 const API_URL = `${API_HOSTNAME}/api/generate-commit-message`;
 const SAVE_COMMIT_LINK_URL = `${API_HOSTNAME}/api/save-commit-link`;
 
