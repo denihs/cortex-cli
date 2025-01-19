@@ -1,11 +1,5 @@
 {
     "header": "Cortex CLI",
     "commitAndPushStaged": true,
-    "stageAllChanges": true,
-    "template": {
-        "name": "quave-projects",
-        "variables": {
-            "#taskId": "123456"
-        }
-    }
+    "stageAllChanges": true
 }

@@ -521,11 +521,17 @@ async function callCommitMessageAPI({ diff, token, options }) {
 
 async function commitChanges({ message, shouldPush = false, token, messageId }) {
   try {
+    // Create a new readline interface for this prompt
+    const readline = (await import('readline')).default.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
     const answer = await new Promise(resolve => {
       const action = shouldPush ? 'COMMIT AND PUSH' : 'COMMIT';
-      process.stdout.write(chalk.yellow(`Do you want to ${action} the staged changes with this message? (y/yes): `));
-      process.stdin.once('data', data => {
+      readline.question(chalk.yellow(`Do you want to ${action} the staged changes with this message? (y/yes): `), data => {
         resolve(data.toString().trim().toLowerCase());
+        readline.close();
       });
     });
 
