@@ -4,6 +4,7 @@ import clipboardy from 'clipboardy';
 import fs from 'fs/promises';
 import path from 'path';
 import micromatch from 'micromatch';
+import inquirer from 'inquirer';
 
 const API_HOSTNAME = process.env.CORTEX_COMMIT_MESSAGES_API_HOSTNAME || 'https://commits.denyhs.com';
 const API_URL = `${API_HOSTNAME}/api/generate-commit-message`;
@@ -35,8 +36,126 @@ const BINARY_FILE_PATTERNS = [
   'pnpm-lock.yaml'
 ];
 
+
+function handleFetch({ url, body, token, method = 'POST' }) {
+  return fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${token}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
 function shouldExcludeContent(filePath) {
   return micromatch.isMatch(filePath, BINARY_FILE_PATTERNS, { basename: true });
+}
+
+async function getUserTemplates({token}) {
+  try {
+    const response = await handleFetch({
+      url: `${API_HOSTNAME}/api/templates-map`,
+      method: 'GET',
+      token
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch user templates');
+    }
+
+    const { templates } = await response.json();
+    return templates;
+  } catch (error) {
+    console.error(chalk.yellow('Warning: Failed to fetch user templates:'), error.message);
+    return {};
+  }
+}
+
+function getInitialTemplate({ selectedTemplateName, templatesFromApi, templateFromConfig }) {
+  if (!templateFromConfig || !templateFromConfig.name || !templatesFromApi[templateFromConfig.name]) {
+    return templatesFromApi[selectedTemplateName] || {};
+  }
+
+  const templateFromApi = templatesFromApi[templateFromConfig.name];
+
+  const variables = templateFromConfig.variables 
+    ? templateFromApi.variables.filter(variable => !templateFromConfig.variables[variable])
+    : [];
+
+  return {
+    name: templateFromConfig.name,
+    variables
+  };
+}
+
+async function handleTemplateChoices({ templates, mergedOptions }) {
+  const { templateName, template: templateFromConfig = {} } = mergedOptions;
+
+  let selectedTemplateName = templateName || templateFromConfig.name;
+  let selectedTemplate = getInitialTemplate({ selectedTemplateName, templatesFromApi: templates, templateFromConfig });
+
+  // If no template provided or provided template doesn't exist, show selection prompt
+  console.log('\n');
+  if (!selectedTemplateName || !templates[selectedTemplateName]) {
+    const templateChoices = [
+      ...Object.keys(templates).map(name => ({
+        name,
+        value: { name, variables: templates[name].variables }
+      })),
+      { name: '(none)', value: null }
+    ];
+
+    const { choice } = await inquirer.prompt([{
+      type: 'list',
+      name: 'choice',
+      message: 'Choose the template:',
+      choices: templateChoices
+    }]);
+
+    if (!choice) {
+      return {};
+    }
+
+    selectedTemplate = choice;
+    selectedTemplateName = choice.name;
+  } else {
+    console.log(chalk.green("Using the"), chalk.white(selectedTemplateName), chalk.green("template"))
+  }
+
+  // Get variable values from user
+  const variables = {};
+  if (selectedTemplate.variables) {
+    for (const variable of selectedTemplate.variables) {
+      const { value } = await inquirer.prompt([{
+        type: 'input',
+        name: 'value',
+        message: `${variable}:`,
+      }]);
+      variables[variable] = value;
+    }
+  }
+
+  return {
+    template: {
+      name: selectedTemplateName,
+      variables: {
+        ...(templateFromConfig?.variables || {}),
+        ...variables
+      }
+    },
+    ...(templates[selectedTemplateName]?.settings || {})
+  };
+}
+
+async function getTemplateOptions({ templates, mergedOptions }) {
+  if (!Object.keys(templates).length) {
+    console.log(chalk.yellow('No templates found.'));
+    return {};
+  }
+
+  return handleTemplateChoices({ templates, mergedOptions });
 }
 
 async function loadConfigFile() {
@@ -91,7 +210,7 @@ function getCommitOptions({ cliOptions, configOptions, defaultOptions }) {
   return { commitStaged, commitAndPushStaged };
 }
 
-function mergeOptions(cliOptions) {
+function mergeOptions({ cliOptions, token }) {
   const defaultOptions = {
     stageAllChanges: false,
     commitStaged: false,
@@ -101,6 +220,9 @@ function mergeOptions(cliOptions) {
     exclude: [],
     verbose: false,
     preScript: '',
+    withTemplates: false,
+    templateName: '',
+    template: {}
   };
 
   return async () => {
@@ -112,12 +234,28 @@ function mergeOptions(cliOptions) {
       throw new Error(`Invalid configuration options found in .cortexrc: ${invalidOptions.join(', ')}`);
     }
 
+    const mergedOptionsWithoutTemplates = {
+      ...defaultOptions,
+      ...configOptions,
+      ...cliOptions,
+    }
+
+    let templateOptions = {};
+    if (mergedOptionsWithoutTemplates.withTemplates || mergedOptionsWithoutTemplates.templateName) {
+      const templates = await getUserTemplates({token});
+      templateOptions = await getTemplateOptions({ templates, mergedOptions: mergedOptionsWithoutTemplates });
+    }
+
+    const { template, ...settingsFromTemplate } = templateOptions;
+
     const finalOptions = {
       ...defaultOptions,
+      ...settingsFromTemplate,
       ...configOptions,
       ...cliOptions,
       ...getCommitOptions({ cliOptions, configOptions, defaultOptions }),
       ...getIncludeExcludeOptions({ cliOptions, configOptions }),
+      template,
     };
 
     if (finalOptions.verbose) {
@@ -315,17 +453,6 @@ function convertSshToHttps(url, service) {
     .replace(/\/$/, ''); // Remove trailing slash if present
 }
 
-function handleFetch({ url, body, token, method = 'POST' }) {
-  return fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Basic ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-}
-
 async function saveCommitLink({ token, messageId }) {
   const commitHash = await git.revparse(['HEAD']);
     
@@ -370,7 +497,7 @@ async function callCommitMessageAPI({ diff, token, options }) {
   try {
     const response = await handleFetch({ 
       url: API_URL, 
-      body: { diff, header: options.header }, 
+      body: { diff, header: options.header, template: options.template }, 
       token
     });
 
@@ -442,7 +569,7 @@ export async function generateCommitMessage(cliOptions) {
     const token = validateEnvironment();
     await validateGitRepository();
 
-    const options = await mergeOptions(cliOptions)();
+    const options = await mergeOptions({ cliOptions, token })();
 
     if (options.preScript) {
       await executePreScript(options.preScript);

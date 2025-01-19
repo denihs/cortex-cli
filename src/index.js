@@ -31,6 +31,8 @@ program
   .option('--commitStaged', 'Commit staged changes with the generated message')
   .option('--commitAndPushStaged', 'Commit staged changes and push them to the remote repository with the generated message')
   .option('--verbose', 'Show detailed information about the current configuration and execution')
+  .option('--withTemplates', 'List available templates to generate the commit message')
+  .option('--templateName <templateName>', 'Use a specific template to generate the commit message')
   .action(generateCommitMessage);
 
 program.parse(); 
