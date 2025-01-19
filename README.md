@@ -153,6 +153,70 @@ Here are some common `.cortexrc` configurations:
 }
 ```
 
+## Templates
+
+Templates allow you to customize how your commit messages are generated using the template feature available at [commits.denyhs.com/templates](https://commits.denyhs.com/templates). You can use templates interactively with the `--withTemplates` flag or specify a template name with `--templateName`.
+
+### Template Configuration
+
+First, create your template on [commits.denyhs.com/templates](https://commits.denyhs.com/templates). Templates use variables (prefixed with #) that will be replaced with actual values. For example:
+
+```
+#taskId - #taskName
+
+#GENERATED_MESSAGE
+```
+
+Then, in your `.cortexrc` file, you can pre-define values for some or all of these variables:
+
+```json
+{
+  "template": {
+    "name": "my-template",
+    "variables": {
+      "#taskName": "Creating login page"
+    }
+  }
+}
+```
+
+When you run the CLI, it will:
+1. Use the pre-defined variables from your `.cortexrc`
+2. Prompt you to fill in any remaining variables (like `#taskId` in this case)
+3. Replace `#GENERATED_MESSAGE` with the AI-generated commit message
+
+### Example Usage
+
+Let's say you have this template named "my-proj" on commits.denyhs.com:
+```
+#taskId - #taskName
+
+#GENERATED_MESSAGE
+```
+
+Your `.cortexrc`:
+```json
+{
+  "template": {
+    "name": "my-proj",
+    "variables": {
+      "#taskName": "Creating login page"
+    }
+  }
+}
+```
+
+When you run the CLI:
+1. It will prompt you to enter the `#taskId`
+2. After entering "123", it might generate a message like:
+```
+123 - Creating login page
+
+Finishing my amazing login page
+```
+
+Note: While you can use templates interactively with CLI flags (`--withTemplates` or `--templateName`), pre-defining template variables is only possible through the `.cortexrc` file.
+
 ## Usage
 
 ```bash
