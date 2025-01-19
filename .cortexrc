@@ -1,5 +1,6 @@
 {
     "header": "Cortex CLI",
     "commitAndPushStaged": true,
-    "stageAllChanges": true
+    "stageAllChanges": true,
+    "preScript": "npm run quave-check"
 }

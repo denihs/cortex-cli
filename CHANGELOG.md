@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-01-19
+### Added 🌟
+- **Powerful Template System**: New template-based commit message generation
+  - Interactive template selection with `--withTemplates` flag
+  - Direct template usage with `--templateName` flag
+  - Support for template variables with interactive prompts
+  - Template configuration in `.cortexrc` file
+
+You can create new templates on https://commits.denyhs.com/templates
+
 ## [2.2.0] - 2025-01-16
 ### Added
 - New `--preScript` flag to execute commands (like linting or tests) before generating the commit message

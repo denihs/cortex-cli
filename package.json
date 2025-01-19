@@ -1,6 +1,6 @@
 {
   "name": "@denyhs/cortex-cli",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "CLI tool to generate commit messages based on repository changes",
   "main": "src/index.js",
   "type": "module",
@@ -8,7 +8,10 @@
     "cortex": "./src/index.js"
   },
   "scripts": {
-    "prepare": "chmod +x src/index.js"
+    "prepare": "chmod +x src/index.js",
+    "quave-eslint": "eslint . --fix --ignore-pattern '**/*.test.js' --ignore-pattern '**/__tests__/**' --ignore-pattern '**/__mocks__/**' --ignore-pattern '**/jest.*'",
+    "quave-prettier": "prettier --write \"**/*.js\"",
+    "quave-check": "npm run quave-eslint && npm run quave-prettier"
   },
   "publishConfig": {
     "access": "public"
@@ -39,7 +42,54 @@
     "micromatch": "^4.0.8",
     "simple-git": "^3.22.0"
   },
+  "devDependencies": {
+    "@quave/eslint-config-quave": "^3.0.0",
+    "autoprefixer": "^10.4.20",
+    "babel-plugin-react-compiler": "^0.0.0-experimental-6067d4e-20240924",
+    "eslint-plugin-react-compiler": "^0.0.0-experimental-92aaa43-20240924",
+    "lefthook": "^1.7.16"
+  },
   "files": [
     "src/"
-  ]
+  ],
+  "eslintConfig": {
+    "extends": [
+      "@quave/quave"
+    ],
+    "plugins": [
+      "eslint-plugin-react-compiler"
+    ],
+    "settings": {
+      "react": {
+        "version": false
+      },
+      "import/resolver": {
+        "node": {
+          "baseUrl": ".",
+          "paths": [
+            "imports"
+          ],
+          "moduleDirectory": [
+            "node_modules",
+            "imports"
+          ],
+          "extensions": [
+            ".js",
+            ".jsx",
+            ".json"
+          ]
+        }
+      }
+    },
+    "rules": {
+      "react-compiler/react-compiler": "error",
+      "react/jsx-filename-extension": "off",
+      "@quave/meteor-quave/no-sync-mongo-methods-on-server": 0,
+      "@quave/meteor-quave/no-sync-user-methods-on-server": 0,
+      "@quave/meteor-quave/no-meteor-wrap-async-usage": 0,
+      "import/no-unresolved": "off",
+      "import/extensions": "off",
+      "prefer-arrow-callback": "off"
+    }
+  }
 }

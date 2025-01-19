@@ -39,7 +39,14 @@ You can also create a `.cortexrc` file in your project root to set default optio
   "include": ["src/**/*.js", "lib/**/*.js"],
   "exclude": ["test/**", "**/*.test.js"],
   "header": "feat: ",
-  "commitStaged": true
+  "commitStaged": true,
+  "template": {
+    "name": "quave-projects",
+    "variables": {
+      "taskId": "123",
+      "taskName": "My task"
+    }
+  }
 }
 ```
 
@@ -162,12 +169,20 @@ cortex commit-message [options]
 - `--commitStaged`: After generating the message, prompt to commit staged changes
 - `--commitAndPushStaged`: After generating the message, prompt to commit staged changes and push them to the remote repository
 - `--verbose`: Show detailed information about the current configuration and execution
+- `--withTemplates`: Show an interactive prompt to choose from available templates for generating the commit message
+- `--templateName <templateName>`: Use a specific template by name to generate the commit message
 
 ### Examples
 
 ```bash
 # Generate message for staged changes
 cortex commit-message
+
+# Use interactive template selection
+cortex commit-message --withTemplates
+
+# Use a specific template
+cortex commit-message --templateName "my-template"
 
 # Run linter before generating message
 cortex commit-message --preScript "npm run lint"
