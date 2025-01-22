@@ -256,7 +256,7 @@ function getCommitOptions({ cliOptions, configOptions, defaultOptions }) {
   return { commitStaged, commitAndPushStaged };
 }
 
-function mergeOptions({ cliOptions, token }) {
+function mergeOptions({ cliOptions, token, runAfterLoadHigherOptions }) {
   const defaultOptions = {
     stageAllChanges: false,
     commitStaged: false,
@@ -289,6 +289,8 @@ function mergeOptions({ cliOptions, token }) {
       ...configOptions,
       ...cliOptions,
     };
+
+    await runAfterLoadHigherOptions(mergedOptionsWithoutTemplates);
 
     let templateOptions = {};
     if (
@@ -690,11 +692,16 @@ export async function generateCommitMessage(cliOptions) {
     const token = validateEnvironment();
     await validateGitRepository();
 
-    const options = await mergeOptions({ cliOptions, token })();
-
-    if (options.preScript) {
-      await executePreScript(options.preScript);
-    }
+    const runAfterLoadHigherOptions = async (options) => {
+      if (options.preScript) {
+        await executePreScript(options.preScript);
+      }
+    };
+    const options = await mergeOptions({
+      cliOptions,
+      token,
+      runAfterLoadHigherOptions,
+    })();
 
     const diff = await getDiff(options);
 
